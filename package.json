@@ -1,0 +1,39 @@
+{
+  "name": "robatosystems",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@getbrevo/brevo": "^3.0.1",
+    "@sendgrid/mail": "^8.1.6",
+    "axios": "^1.13.2",
+    "bcrypt": "^6.0.0",
+    "cloudinary": "^2.8.0",
+    "framer-motion": "^12.23.24",
+    "jodit-react": "^5.2.38",
+    "lucide-react": "^0.552.0",
+    "mongoose": "^8.19.3",
+    "multer": "^2.0.2",
+    "next": "16.0.1",
+    "next-auth": "^4.24.13",
+    "next-connect": "^1.0.0",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "resend": "^6.4.2",
+    "sanitize-html": "^2.17.0",
+    "slugify": "^1.6.6",
+    "streamifier": "^0.1.1",
+    "swiper": "^12.0.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "eslint": "^9",
+    "eslint-config-next": "16.0.1",
+    "tailwindcss": "^4"
+  }
+}
