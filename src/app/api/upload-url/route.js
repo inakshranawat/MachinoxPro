@@ -1,7 +1,10 @@
+// ========================================
+// FILE 2: src/app/api/upload-url/route.js
+// ========================================
 import { NextResponse } from "next/server";
-import cloudinary from "@/lib/cloudinary";
+import { writeFile, mkdir } from "fs/promises";
+import path from "path";
 import axios from "axios";
-import streamifier from "streamifier";
 
 export async function POST(request) {
   try {
@@ -15,19 +18,30 @@ export async function POST(request) {
     const response = await axios.get(imageUrl, { responseType: "arraybuffer" });
     const buffer = Buffer.from(response.data, "binary");
 
-    // Upload to Cloudinary
-    const upload = await new Promise((resolve, reject) => {
-      const uploadStream = cloudinary.uploader.upload_stream(
-        { folder: "blogs" },
-        (err, result) => {
-          if (err) reject(err);
-          else resolve(result);
-        }
-      );
-      streamifier.createReadStream(buffer).pipe(uploadStream);
-    });
+    // Extract filename from URL or generate one
+    const urlPath = new URL(imageUrl).pathname;
+    const originalName = path.basename(urlPath) || "image.jpg";
+    const timestamp = Date.now();
+    const filename = `${timestamp}-${originalName}`;
 
-    return NextResponse.json({ success: true, url: upload.secure_url });
+    // Define upload directory
+    const uploadDir = path.join(process.cwd(), "public", "uploads", "blogs");
+    
+    // Create directory if it doesn't exist
+    try {
+      await mkdir(uploadDir, { recursive: true });
+    } catch (error) {
+      // Directory already exists
+    }
+
+    // Save file
+    const filepath = path.join(uploadDir, filename);
+    await writeFile(filepath, buffer);
+
+    // Return relative URL path (what gets stored in DB)
+    const url = `/uploads/blogs/${filename}`;
+
+    return NextResponse.json({ success: true, url });
   } catch (error) {
     console.error("Upload error:", error);
     return NextResponse.json({ error: "Failed to upload image" }, { status: 500 });

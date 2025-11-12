@@ -1,5 +1,7 @@
+
 import { NextResponse } from "next/server";
-import cloudinary from "@/lib/cloudinary";
+import { writeFile, mkdir } from "fs/promises";
+import path from "path";
 
 export async function POST(request) {
   try {
@@ -13,14 +15,29 @@ export async function POST(request) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    const upload = await new Promise((resolve, reject) => {
-      cloudinary.uploader.upload_stream({ folder: "blogs" }, (err, result) => {
-        if (err) reject(err);
-        else resolve(result);
-      }).end(buffer);
-    });
+    // Generate unique filename
+    const timestamp = Date.now();
+    const originalName = file.name.replace(/\s+/g, "-");
+    const filename = `${timestamp}-${originalName}`;
 
-    return NextResponse.json({ success: true, url: upload.secure_url });
+    // Define upload directory
+    const uploadDir = path.join(process.cwd(), "public", "uploads", "blogs");
+    
+    // Create directory if it doesn't exist
+    try {
+      await mkdir(uploadDir, { recursive: true });
+    } catch (error) {
+      // Directory already exists
+    }
+
+    // Save file
+    const filepath = path.join(uploadDir, filename);
+    await writeFile(filepath, buffer);
+
+    // Return relative URL path (what gets stored in DB)
+    const url = `/uploads/blogs/${filename}`;
+
+    return NextResponse.json({ success: true, url });
   } catch (error) {
     console.error("Upload error:", error);
     return NextResponse.json({ error: "Failed to upload image" }, { status: 500 });
