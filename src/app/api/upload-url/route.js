@@ -15,14 +15,37 @@ export async function POST(request) {
     }
 
     // Fetch image from URL
-    const response = await axios.get(imageUrl, { responseType: "arraybuffer" });
-    const buffer = Buffer.from(response.data, "binary");
+    const response = await axios.get(imageUrl, { 
+      responseType: "arraybuffer",
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    });
+    
+    const buffer = Buffer.from(response.data);
 
-    // Extract filename from URL or generate one
-    const urlPath = new URL(imageUrl).pathname;
-    const originalName = path.basename(urlPath) || "image.jpg";
+    // Get content type from response headers
+    const contentType = response.headers['content-type'];
+    
+    // Determine file extension from content type or URL
+    let extension = 'jpg'; // default
+    if (contentType) {
+      if (contentType.includes('png')) extension = 'png';
+      else if (contentType.includes('jpeg') || contentType.includes('jpg')) extension = 'jpg';
+      else if (contentType.includes('gif')) extension = 'gif';
+      else if (contentType.includes('webp')) extension = 'webp';
+    } else {
+      // Try to extract from URL
+      const urlPath = new URL(imageUrl).pathname;
+      const urlExt = path.extname(urlPath).toLowerCase().replace('.', '');
+      if (urlExt && ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(urlExt)) {
+        extension = urlExt;
+      }
+    }
+
+    // Generate filename with proper extension
     const timestamp = Date.now();
-    const filename = `${timestamp}-${originalName}`;
+    const filename = `${timestamp}-url-image.${extension}`;
 
     // Define upload directory
     const uploadDir = path.join(process.cwd(), "public", "uploads", "blogs");
@@ -44,6 +67,10 @@ export async function POST(request) {
     return NextResponse.json({ success: true, url });
   } catch (error) {
     console.error("Upload error:", error);
-    return NextResponse.json({ error: "Failed to upload image" }, { status: 500 });
+    console.error("Error details:", error.message);
+    return NextResponse.json({ 
+      error: "Failed to upload image from URL", 
+      details: error.message 
+    }, { status: 500 });
   }
 }
