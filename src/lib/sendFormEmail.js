@@ -110,7 +110,7 @@ export default async function sendFormEmail({ formData, formType }) {
           </div>
           <div style="padding:40px 30px; line-height:1.8; font-size:15px; color:#444;">
             <div style="text-align:center; margin-bottom:25px;">
-              <img src="${BASE_URL}/web-logo.png" alt="${companyName}" style="width:60px; height:60px; border-radius:8px; display:block; margin:0 auto;" loading="eager" />
+              <img src="${BASE_URL}/web-logo.png"  style="width:60px; height:60px; border-radius:8px; display:block; margin:0 auto;" loading="eager" />
             </div>
             <p style="margin:0 0 20px 0;">Dear ${safeData.firstName} ${safeData.lastName},</p>
             <p style="margin:0 0 20px 0;">
@@ -169,7 +169,7 @@ export default async function sendFormEmail({ formData, formType }) {
           </div>
           <div style="padding:40px 30px; line-height:1.8; font-size:15px; color:#444;">
             <div style="text-align:center; margin-bottom:25px;">
-              <img src="${BASE_URL}/web-logo.png" alt="${companyName}" style="width:60px; height:60px; border-radius:8px; display:block; margin:0 auto;" loading="eager" />
+              <img src="${BASE_URL}/web-logo.png"  style="width:60px; height:60px; border-radius:8px; display:block; margin:0 auto;" loading="eager" />
             </div>
             <p style="margin:0 0 20px 0;">Dear ${safeData.firstName} ${safeData.lastName},</p>
             <p style="margin:0 0 20px 0;">
