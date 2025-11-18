@@ -49,7 +49,7 @@ export default async function sendFormEmail({ formData, formType }) {
   // Validate environment variables
   const BREVO_API_KEY = process.env.BREVO_API_KEY;
   const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
-  
+  const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
 
   if (!BREVO_API_KEY) {
     throw new Error('BREVO_API_KEY environment variable is not set');
@@ -57,7 +57,9 @@ export default async function sendFormEmail({ formData, formType }) {
   if (!ADMIN_EMAIL) {
     throw new Error('ADMIN_EMAIL environment variable is not set');
   }
-  
+  if (!BASE_URL) {
+    throw new Error('NEXT_PUBLIC_BASE_URL environment variable is not set');
+  }
 
   // Optional CC email configuration
   const CC_EMAILS = process.env.CC_EMAILS
