@@ -109,9 +109,7 @@ export default async function sendFormEmail({ formData, formType }) {
             <h1 style="margin:0; font-size:32px; color:#ffffff; font-weight:600; letter-spacing:-0.5px;">${companyName}</h1>
           </div>
           <div style="padding:40px 30px; line-height:1.8; font-size:15px; color:#444;">
-            <div style="text-align:center; margin-bottom:25px;">
-              <img src="${BASE_URL}/web-logo.png"  style="width:60px; height:60px; border-radius:8px; display:block; margin:0 auto;" loading="eager" />
-            </div>
+            
             <p style="margin:0 0 20px 0;">Dear ${safeData.firstName} ${safeData.lastName},</p>
             <p style="margin:0 0 20px 0;">
               <span style="font-size:18px;">📧</span> Thank you for contacting <strong>${companyName}</strong>. We have received your inquiry and appreciate you taking the time to reach out to us.
@@ -168,9 +166,7 @@ export default async function sendFormEmail({ formData, formType }) {
             <h1 style="margin:0; font-size:32px; color:#ffffff; font-weight:600; letter-spacing:-0.5px;">${companyName}</h1>
           </div>
           <div style="padding:40px 30px; line-height:1.8; font-size:15px; color:#444;">
-            <div style="text-align:center; margin-bottom:25px;">
-              <img src="${BASE_URL}/web-logo.png"  style="width:60px; height:60px; border-radius:8px; display:block; margin:0 auto;" loading="eager" />
-            </div>
+            
             <p style="margin:0 0 20px 0;">Dear ${safeData.firstName} ${safeData.lastName},</p>
             <p style="margin:0 0 20px 0;">
               <span style="font-size:18px;">📧</span> Thank you for your interest in <strong>${companyName}</strong> and for requesting a product demonstration. We are excited to show you how our solutions can benefit your organization.
