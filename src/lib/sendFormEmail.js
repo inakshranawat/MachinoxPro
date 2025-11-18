@@ -43,26 +43,53 @@ function validateFormData(formData, formType) {
 }
 
 /**
- * Fetches and converts logo to base64 from file system
- * For production: Consider caching this value or using environment variable
+ * Fetches and converts logo to base64
+ * Tries multiple methods for maximum compatibility
  */
-async function getLogoBase64() {
+async function getLogoBase64(baseUrl) {
+  // Method 1: Try reading from file system (for server-side)
   try {
     const fs = require('fs').promises;
     const path = require('path');
     
-    // Path to logo in public folder
     const logoPath = path.join(process.cwd(), 'public', 'web-logo.png');
+    console.log('Attempting to read logo from:', logoPath);
     
-    // Read file and convert to base64
     const logoBuffer = await fs.readFile(logoPath);
     const base64 = logoBuffer.toString('base64');
     
+    console.log('✅ Logo successfully loaded from file system');
+    console.log('Base64 length:', base64.length);
+    
     return `data:image/png;base64,${base64}`;
-  } catch (error) {
-    console.error('Error reading logo file:', error);
-    console.warn('Logo not found at public/web-logo.png, using fallback');
-    return null;
+  } catch (fsError) {
+    console.log('⚠️ File system read failed:', fsError.message);
+    
+    // Method 2: Fallback to HTTP fetch
+    try {
+      console.log('Attempting to fetch logo from:', `${baseUrl}/web-logo.png`);
+      
+      const response = await fetch(`${baseUrl}/web-logo.png`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const arrayBuffer = await response.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      const base64 = buffer.toString('base64');
+      const mimeType = response.headers.get('content-type') || 'image/png';
+      
+      console.log('✅ Logo successfully fetched via HTTP');
+      console.log('MIME type:', mimeType);
+      console.log('Base64 length:', base64.length);
+      
+      return `data:${mimeType};base64,${base64}`;
+    } catch (fetchError) {
+      console.error('❌ HTTP fetch failed:', fetchError.message);
+      console.error('Logo could not be loaded. Using fallback.');
+      return null;
+    }
   }
 }
 
@@ -105,9 +132,16 @@ export default async function sendFormEmail({ formData, formType }) {
   const themeColor = '#3c0366';
   const companyName = 'Robato Systems';
 
-  // Fetch logo as base64 for instant loading from file system
+  // Fetch logo as base64 for instant loading
   // PRODUCTION TIP: Cache this value or pre-generate at build time
-  const logoBase64 = await getLogoBase64();
+  const logoBase64 = await getLogoBase64(BASE_URL);
+  
+  // Debug: Log logo status
+  if (logoBase64) {
+    console.log('✅ Logo embedded successfully (first 50 chars):', logoBase64.substring(0, 50));
+  } else {
+    console.warn('⚠️ Using fallback logo (colored box)');
+  }
 
   // Escape user inputs to prevent XSS
   const safeData = {
