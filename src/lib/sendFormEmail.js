@@ -43,53 +43,24 @@ function validateFormData(formData, formType) {
 }
 
 /**
- * Fetches and converts logo to base64
- * Tries multiple methods for maximum compatibility
+ * Reads logo file and converts to base64 for inline attachment
  */
-async function getLogoBase64(baseUrl) {
-  // Method 1: Try reading from file system (for server-side)
+async function getLogoForAttachment() {
   try {
     const fs = require('fs').promises;
     const path = require('path');
     
     const logoPath = path.join(process.cwd(), 'public', 'web-logo.png');
-    console.log('Attempting to read logo from:', logoPath);
-    
     const logoBuffer = await fs.readFile(logoPath);
     const base64 = logoBuffer.toString('base64');
     
-    console.log('✅ Logo successfully loaded from file system');
-    console.log('Base64 length:', base64.length);
-    
-    return `data:image/png;base64,${base64}`;
-  } catch (fsError) {
-    console.log('⚠️ File system read failed:', fsError.message);
-    
-    // Method 2: Fallback to HTTP fetch
-    try {
-      console.log('Attempting to fetch logo from:', `${baseUrl}/web-logo.png`);
-      
-      const response = await fetch(`${baseUrl}/web-logo.png`);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      
-      const arrayBuffer = await response.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-      const base64 = buffer.toString('base64');
-      const mimeType = response.headers.get('content-type') || 'image/png';
-      
-      console.log('✅ Logo successfully fetched via HTTP');
-      console.log('MIME type:', mimeType);
-      console.log('Base64 length:', base64.length);
-      
-      return `data:${mimeType};base64,${base64}`;
-    } catch (fetchError) {
-      console.error('❌ HTTP fetch failed:', fetchError.message);
-      console.error('Logo could not be loaded. Using fallback.');
-      return null;
-    }
+    return {
+      content: base64,
+      name: 'company-logo.png'
+    };
+  } catch (error) {
+    console.error('Error reading logo:', error);
+    return null;
   }
 }
 
@@ -132,16 +103,8 @@ export default async function sendFormEmail({ formData, formType }) {
   const themeColor = '#3c0366';
   const companyName = 'Robato Systems';
 
-  // Fetch logo as base64 for instant loading
-  // PRODUCTION TIP: Cache this value or pre-generate at build time
-  const logoBase64 = await getLogoBase64(BASE_URL);
-  
-  // Debug: Log logo status
-  if (logoBase64) {
-    console.log('✅ Logo embedded successfully (first 50 chars):', logoBase64.substring(0, 50));
-  } else {
-    console.warn('⚠️ Using fallback logo (colored box)');
-  }
+  // Get logo for inline attachment (CID method)
+  const logoAttachment = await getLogoForAttachment();
 
   // Escape user inputs to prevent XSS
   const safeData = {
@@ -155,10 +118,10 @@ export default async function sendFormEmail({ formData, formType }) {
     message: escapeHtml(formData.message),
   };
 
-  // Logo image HTML - uses base64 for instant loading
-  const logoHtml = logoBase64 
-    ? `<img src="${logoBase64}" alt="${companyName}" style="width:60px; height:60px; border-radius:8px; display:block; margin:0 auto;" />`
-    : `<div style="width:60px; height:60px; border-radius:8px; background:${themeColor}; display:block; margin:0 auto;"></div>`;
+  // Logo image HTML - uses CID reference for inline image
+  const logoHtml = logoAttachment
+    ? `<img src="cid:companyLogo" alt="${companyName}" style="width:60px; height:60px; border-radius:8px; display:block; margin:0 auto;" />`
+    : `<div style="width:60px; height:60px; border-radius:8px; background:${themeColor}; display:block; margin:0 auto; line-height:60px; color:white; text-align:center; font-weight:bold; font-size:20px;">RS</div>`;
 
   let userSubject = '';
   let adminSubject = '';
@@ -372,7 +335,7 @@ export default async function sendFormEmail({ formData, formType }) {
   }
 
   /**
-   * Sends an email via Brevo API with enhanced error handling
+   * Sends an email via Brevo API with inline image attachment
    */
   const sendEmail = async (options) => {
     const {
@@ -383,10 +346,11 @@ export default async function sendFormEmail({ formData, formType }) {
       fromName,
       cc = [],
       replyTo,
+      includeLogo = false,
     } = options;
 
     try {
-      // Build email payload - only include cc if it has values
+      // Build email payload
       const emailPayload = {
         sender: { email: fromEmail, name: fromName },
         to: to.map((email) => ({ email })),
@@ -395,9 +359,20 @@ export default async function sendFormEmail({ formData, formType }) {
         htmlContent: html,
       };
 
-      // Only add cc if it has values
+      // Add CC if provided
       if (cc.length > 0) {
         emailPayload.cc = cc.map((email) => ({ email }));
+      }
+
+      // Add inline image attachment if logo is available
+      if (includeLogo && logoAttachment) {
+        emailPayload.inlineImages = [
+          {
+            content: logoAttachment.content,
+            name: logoAttachment.name,
+            contentId: 'companyLogo'
+          }
+        ];
       }
 
       const res = await fetch('https://api.brevo.com/v3/smtp/email', {
@@ -416,7 +391,6 @@ export default async function sendFormEmail({ formData, formType }) {
           status: res.status,
           statusText: res.statusText,
           body: json,
-          payload: emailPayload,
         });
         throw new Error(
           `Brevo API returned ${res.status}: ${json.message || JSON.stringify(json)}`
@@ -431,7 +405,7 @@ export default async function sendFormEmail({ formData, formType }) {
   };
 
   try {
-    // Send welcome email to user
+    // Send welcome email to user with inline logo
     await sendEmail({
       to: [formData.email],
       subject: userSubject,
@@ -439,10 +413,10 @@ export default async function sendFormEmail({ formData, formType }) {
       fromEmail: ADMIN_EMAIL,
       fromName: companyName,
       replyTo: REPLY_TO_EMAIL,
+      includeLogo: true,
     });
 
-    // Send notification email to admin with CC
-    // Reply-To is set to the user's email so admin can reply directly
+    // Send notification email to admin (no logo needed for admin emails)
     await sendEmail({
       to: [ADMIN_EMAIL],
       cc: CC_EMAILS,
@@ -450,7 +424,8 @@ export default async function sendFormEmail({ formData, formType }) {
       html: htmlAdmin,
       fromEmail: ADMIN_EMAIL,
       fromName: companyName,
-      replyTo: formData.email, // Reply directly to the user
+      replyTo: formData.email,
+      includeLogo: false,
     });
 
     return {
