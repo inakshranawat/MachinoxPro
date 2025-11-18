@@ -43,24 +43,25 @@ function validateFormData(formData, formType) {
 }
 
 /**
- * Fetches and converts logo to base64
- * This should be done once at build time or cached
+ * Fetches and converts logo to base64 from file system
+ * For production: Consider caching this value or using environment variable
  */
-async function getLogoBase64(baseUrl) {
+async function getLogoBase64() {
   try {
-    const response = await fetch(`${baseUrl}/web-logo.png`);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch logo: ${response.status}`);
-    }
+    const fs = require('fs').promises;
+    const path = require('path');
     
-    const buffer = await response.arrayBuffer();
-    const base64 = Buffer.from(buffer).toString('base64');
-    const mimeType = response.headers.get('content-type') || 'image/png';
+    // Path to logo in public folder
+    const logoPath = path.join(process.cwd(), 'public', 'web-logo.png');
     
-    return `data:${mimeType};base64,${base64}`;
+    // Read file and convert to base64
+    const logoBuffer = await fs.readFile(logoPath);
+    const base64 = logoBuffer.toString('base64');
+    
+    return `data:image/png;base64,${base64}`;
   } catch (error) {
-    console.error('Error fetching logo:', error);
-    // Return a fallback or throw error based on your requirements
+    console.error('Error reading logo file:', error);
+    console.warn('Logo not found at public/web-logo.png, using fallback');
     return null;
   }
 }
@@ -104,9 +105,9 @@ export default async function sendFormEmail({ formData, formType }) {
   const themeColor = '#3c0366';
   const companyName = 'Robato Systems';
 
-  // Fetch logo as base64 for instant loading
+  // Fetch logo as base64 for instant loading from file system
   // PRODUCTION TIP: Cache this value or pre-generate at build time
-  const logoBase64 = await getLogoBase64(BASE_URL);
+  const logoBase64 = await getLogoBase64();
 
   // Escape user inputs to prevent XSS
   const safeData = {
