@@ -48,7 +48,7 @@ function validateFormData(formData, formType) {
 export default async function sendFormEmail({ formData, formType }) {
   // Validate environment variables
   const BREVO_API_KEY = process.env.BREVO_API_KEY;
-  const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+  const ADMIN_EMAIL = process.env.ADMIN_EMAIL; // brevo@robatosystems.com (Brevo verified sender)
   const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
 
   if (!BREVO_API_KEY) {
@@ -61,13 +61,14 @@ export default async function sendFormEmail({ formData, formType }) {
     throw new Error('NEXT_PUBLIC_BASE_URL environment variable is not set');
   }
 
-  // Optional CC email configuration
+  // CC email configuration (sales@robatosystems.com and others)
   const CC_EMAILS = process.env.CC_EMAILS
     ?.split(',')
     .map((e) => e.trim())
     .filter((e) => e && isValidEmail(e)) || [];
   
-  const REPLY_TO_EMAIL = process.env.REPLY_TO_EMAIL || ADMIN_EMAIL;
+  // Reply-To email - default to first CC email (sales) or admin
+  const REPLY_TO_EMAIL = process.env.REPLY_TO_EMAIL || CC_EMAILS[0] || ADMIN_EMAIL;
 
   // Validate reply-to email
   if (!isValidEmail(REPLY_TO_EMAIL)) {
@@ -275,25 +276,29 @@ export default async function sendFormEmail({ formData, formType }) {
 
   try {
     // Send welcome email to user
+    // From: brevo@robatosystems.com, Reply-To: sales@robatosystems.com
     await sendEmail({
       to: [formData.email],
       subject: userSubject,
       html: htmlWelcome,
-      fromEmail: ADMIN_EMAIL,
+      fromEmail: ADMIN_EMAIL,        // brevo@robatosystems.com (verified sender)
       fromName: companyName,
-      replyTo: REPLY_TO_EMAIL,
+      replyTo: REPLY_TO_EMAIL,        // sales@robatosystems.com (where replies go)
     });
 
-    // Send notification email to admin with CC
-    // Reply-To is set to the user's email so admin can reply directly
+    // Send notification email to ADMIN with CC to Sales team
+    // From: brevo@robatosystems.com
+    // To: brevo@robatosystems.com (admin)
+    // CC: sales@robatosystems.com (sales team gets copy)
+    // Reply-To: user's email (so admin/sales can reply directly to customer)
     await sendEmail({
-      to: [ADMIN_EMAIL],
-      cc: CC_EMAILS,
+      to: [ADMIN_EMAIL],              // brevo@robatosystems.com gets notification
+      cc: CC_EMAILS,                  // sales@robatosystems.com gets CC
       subject: adminSubject,
       html: htmlAdmin,
-      fromEmail: ADMIN_EMAIL,
+      fromEmail: ADMIN_EMAIL,         // brevo@robatosystems.com (verified sender)
       fromName: companyName,
-      replyTo: formData.email, // Reply directly to the user
+      replyTo: formData.email,        // User's email (reply directly to customer)
     });
 
     return {
